@@ -8,7 +8,7 @@ if ! ipset list $IPSET_V4 >"/dev/null"; then ipset create $IPSET_V4 hash:ip fami
 curl -s "http://httpdns.n.netease.com/httpdns/v2/d?domain=music.163.com,interface.music.163.com,interface3.music.163.com,apm.music.163.com,apm3.music.163.com,clientlog.music.163.com,clientlog3.music.163.com" |
     grep -Eo '[0-9]+?\.[0-9]+?\.[0-9]+?\.[0-9]+?' |
     sort | uniq | awk -va=${IPSET_V4} '{print "ipset add "a" "$1}' | sh >"/dev/null" 2>&1
-ipset add $IPSET_V4
+ipset add $IPSET_SET $IPSET_V4
 # IPv6 support
 ip6tables -h >"/dev/null" 2>&1
 if [ $? -eq 0 ]; then
