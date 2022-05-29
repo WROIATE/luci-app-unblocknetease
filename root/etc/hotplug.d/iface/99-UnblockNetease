@@ -4,5 +4,5 @@ LOG_FILE="/tmp/log/UnblockNetease/unlock.log"
 sleep 10
 if [ "$(uci get UnblockNetease.@UnblockNetease[0].enable)" == "1" ]; then
     echo "$(date -R) restart app" >>"${LOG_FILE}"
-    /etc/init.d/UnblockNeteaseGo restart
+    /etc/init.d/UnblockNetease restart
 fi

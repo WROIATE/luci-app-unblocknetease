@@ -48,73 +48,75 @@ get_music_source() {
 
 clear_dnsmasq() {
     rm -f $DNSMASQ_CONF
-    /etc/init.d/dnsmasq restart >"/dev/null" 2>&1
+    /etc/init.d/dnsmasq reload >"/dev/null" 2>&1
 }
 
 set_dnsmasq() {
     [ ! -d "/tmp/dnsmasq.d" ] && mkdir -p "/tmp/dnsmasq.d"
-    rm -f "$DNSMASQ_CONF"
-    cat >"$DNSMASQ_CONF" <<EOF
-ipset=/.music.163.com/${IPSET_SET}
+    rm -f $DNSMASQ_CONF && touch $DNSMASQ_CONF
+    echo -e "ipset=/.music.163.com/${IPSET_SET}
 ipset=/interface.music.163.com/${IPSET_SET}
 ipset=/interface3.music.163.com/${IPSET_SET}
 ipset=/apm.music.163.com/${IPSET_SET}
 ipset=/apm3.music.163.com/${IPSET_SET}
-EOF
-    /etc/init.d/dnsmasq restart >"/dev/null" 2>&1
+ipset=/clientlog.music.163.com/${IPSET_SET}
+ipset=/clientlog3.music.163.com/${IPSET_SET}" >$DNSMASQ_CONF
+    /etc/init.d/dnsmasq reload >"/dev/null" 2>&1
 }
 
-set_v4_ipset() {
-    if ! ipset list $IPSET_V4 >"/dev/null"; then ipset create $IPSET_V4 hash:ip family inet; fi
-    curl -s "http://httpdns.n.netease.com/httpdns/v2/d?domain=music.163.com,interface.music.163.com,interface3.music.163.com,apm.music.163.com,apm3.music.163.com,clientlog.music.163.com,clientlog3.music.163.com" | grep -Eo '[0-9]+?\.[0-9]+?\.[0-9]+?\.[0-9]+?' | sort | uniq | awk '{print "ipset add unblocknetease4 "$1}' | bash >"/dev/null" 2>&1
-    ipset add $IPSET_SET $IPSET_V4
-    echo "iptables -t nat -N $FIREWALL_NAME
-iptables -t nat -A $FIREWALL_NAME -d 0.0.0.0/8 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -d 10.0.0.0/8 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -d 127.0.0.0/8 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -d 169.254.0.0/16 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -d 172.16.0.0/12 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -d 192.168.0.0/16 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -d 224.0.0.0/4 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -d 240.0.0.0/4 -j RETURN
-iptables -t nat -A $FIREWALL_NAME -p tcp --dport 80 -j REDIRECT --to-ports $HTTP_PORT
-iptables -t nat -A $FIREWALL_NAME -p tcp --dport 443 -j REDIRECT --to-ports $HTTPS_PORT
-iptables -t nat -I PREROUTING -p tcp -m set --match-set $IPSET_SET dst -j $FIREWALL_NAME" >>$FIREWALL_RULE
+set_v4_firewall() {
+    iptables -t nat -N $FIREWALL_NAME
+    iptables -t nat -A $FIREWALL_NAME -d 0.0.0.0/8 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -d 10.0.0.0/8 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -d 127.0.0.0/8 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -d 169.254.0.0/16 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -d 172.16.0.0/12 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -d 192.168.0.0/16 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -d 224.0.0.0/4 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -d 240.0.0.0/4 -j RETURN
+    iptables -t nat -A $FIREWALL_NAME -p tcp --dport 80 -j REDIRECT --to-ports $HTTP_PORT
+    iptables -t nat -A $FIREWALL_NAME -p tcp --dport 443 -j REDIRECT --to-ports $HTTPS_PORT
+    iptables -t nat -I PREROUTING -p tcp -m set --match-set $IPSET_SET dst -j $FIREWALL_NAME
 }
 
-set_v6_ipset() {
-    if ! ipset list $IPSET_V6 >"/dev/null"; then ipset create $IPSET_V6 hash:ip family inet6; fi
-    khost -t AAAA music.163.com | grep "has IPv6" | awk -F ' ' '{print "ipset add unblocknetease6 "$NF}' | bash >"/dev/null" 2>&1
-    ipset add $IPSET_SET $IPSET_V6
-    echo "ip6tables -t nat -N $FIREWALL_NAME
-ip6tables -t nat -A $FIREWALL_NAME -d ::/8 -j RETURN
-ip6tables -t nat -A $FIREWALL_NAME -d FE80::/10 -j RETURN
-ip6tables -t nat -A $FIREWALL_NAME -d FC00::/7 -j RETURN
-ip6tables -t nat -A $FIREWALL_NAME -d FEC0::/10 -j RETURN
-ip6tables -t nat -A $FIREWALL_NAME -p tcp --dport 80 -j REDIRECT --to-ports $HTTP_PORT
-ip6tables -t nat -A $FIREWALL_NAME -p tcp --dport 443 -j REDIRECT --to-ports $HTTPS_PORT
-ip6tables -t nat -I PREROUTING -p tcp -m set --match-set $IPSET_SET dst -j $FIREWALL_NAME" >>$FIREWALL_RULE
+set_v6_firewall() {
+    ip6tables -t nat -N $FIREWALL_NAME
+    ip6tables -t nat -A $FIREWALL_NAME -d ::/8 -j RETURN
+    ip6tables -t nat -A $FIREWALL_NAME -d FE80::/10 -j RETURN
+    ip6tables -t nat -A $FIREWALL_NAME -d FC00::/7 -j RETURN
+    ip6tables -t nat -A $FIREWALL_NAME -d FEC0::/10 -j RETURN
+    ip6tables -t nat -A $FIREWALL_NAME -p tcp --dport 80 -j REDIRECT --to-ports $HTTP_PORT
+    ip6tables -t nat -A $FIREWALL_NAME -p tcp --dport 443 -j REDIRECT --to-ports $HTTPS_PORT
+    ip6tables -t nat -I PREROUTING -p tcp -m set --match-set $IPSET_SET dst -j $FIREWALL_NAME
 }
 
-set_ipset() {
+set_firewall() {
     if [ "$ENABLE" = "1" ]; then
+        /usr/share/${APP_NAME}/ipset.sh $IPSET_SET $IPSET_V4 $IPSET_V6
         mkdir -p /var/etc && touch $FIREWALL_RULE
-        if ! ipset list $IPSET_SET >"/dev/null"; then ipset create $IPSET_SET list:set; fi
-        set_v4_ipset
+        set_v4_firewall
         ip6tables -h >"/dev/null" 2>&1
-        if [ $? -eq 0 ]; then
-            set_v6_ipset
-        fi
-        /etc/init.d/firewall restart >/dev/null 2>&1
+        [ $? -eq 0 ] && set_v6_firewall
+        mkdir -p /var/etc
+        echo "/etc/init.d/${APP_NAME} restart" >"$FIREWALL_RULE"
     fi
 }
 
-clear_ipset() {
+clear_firewall() {
     rm -f $FIREWALL_RULE
-    /etc/init.d/firewall restart >/dev/null 2>&1
-    ipset destroy $IPSET_SET
-    ipset destroy $IPSET_V4
-    ipset destroy $IPSET_V6
+    iptables -t nat -D PREROUTING -p tcp -m set --match-set $IPSET_SET dst -j $FIREWALL_NAME 2>/dev/null
+    iptables -t nat -F $FIREWALL_NAME 2>/dev/null
+    iptables -t nat -X $FIREWALL_NAME 2>/dev/null
+    ip6tables -h >"/dev/null" 2>&1
+    if [ $? -eq 0 ]; then
+        ip6tables -t nat -D PREROUTING -p tcp -m set --match-set $IPSET_SET dst -j $FIREWALL_NAME 2>/dev/null
+        ip6tables -t nat -F $FIREWALL_NAME 2>/dev/null
+        ip6tables -t nat -X $FIREWALL_NAME 2>/dev/null
+    fi
+    ipset flush $IPSET_SET 2>/dev/null
+    ipset destroy $IPSET_SET 2>/dev/null
+    ipset destroy $IPSET_V4 2>/dev/null
+    ipset destroy $IPSET_V6 2>/dev/null
 }
 
 set_cert() {
@@ -123,7 +125,7 @@ set_cert() {
 
 daemon_proc() {
     [ "$DAEMON_PROC" != "1" ] && return
-    sed -i '/UnblockNeteaseGo/d' /etc/crontabs/root
+    sed -i '/UnblockNetease/d' "/etc/crontabs/root"
     echo "*/1 * * * * /usr/share/${APP_NAME}/check.sh" >>"/etc/crontabs/root"
     /etc/init.d/cron restart >"/dev/null" 2>&1
 }
@@ -134,29 +136,28 @@ unblock_netease() {
     touch $APP_LOG_FILE
     touch $UNLOCK_LOG_FILE
     ${BIN_FILE} \
-        -p $HTTP_PORT \
-        -sp $HTTPS_PORT \
-        -o $(get_music_source) \
-        -m 0 \
-        -c $SERVER_CRT \
-        -k $SERVER_KEY \
-        -sl $SEARCH_LIMIT \
-        $(enable_function "-wl" "$WEB_TRAFFIC") \
-        $(enable_function "-b" "$FORCE_QUALITY") \
-        $(enable_function "-e" "$END_POINT") \
-        $(enable_function "-ba" "$BLOCK_ADS") \
-        $(enable_function "-bu" "$BLOCK_UPDATE") \
-        $(enable_function "-lv" "$LOCAL_VIP") \
-        $(enable_function "-sef" "$SOUND_EFFECTS") \
-        -l $APP_LOG_FILE &
+    -p $HTTP_PORT \
+    -sp $HTTPS_PORT \
+    -o $(get_music_source) \
+    -m 0 \
+    -c $SERVER_CRT \
+    -k $SERVER_KEY \
+    -sl $SEARCH_LIMIT \
+    $(enable_function "-wl" "$WEB_TRAFFIC") \
+    $(enable_function "-b" "$FORCE_QUALITY") \
+    $(enable_function "-e" "$END_POINT") \
+    $(enable_function "-ba" "$BLOCK_ADS") \
+    $(enable_function "-bu" "$BLOCK_UPDATE") \
+    $(enable_function "-lv" "$LOCAL_VIP") \
+    $(enable_function "-sef" "$SOUND_EFFECTS") \
+    -l $APP_LOG_FILE &
 }
 
 stop() {
-    clear_ipset
+    clear_firewall
     clear_dnsmasq
-    rm -rf $LOG_PATH
     killall -9 "$BIN_FILE" >"/dev/null" 2>&1
-    sed -i '/UnblockNeteaseGo/d' "/etc/crontabs/root"
+    sed -i '/UnblockNetease/d' "/etc/crontabs/root"
     /etc/init.d/cron restart >"/dev/null" 2>&1
 }
 
@@ -165,7 +166,7 @@ start() {
     [ "$ENABLE" != "1" ] && return
     set_cert
     unblock_netease
-    set_ipset
     set_dnsmasq
+    set_firewall
     daemon_proc
 }
