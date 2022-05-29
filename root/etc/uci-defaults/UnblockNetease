@@ -1,0 +1,20 @@
+#!/bin/sh
+
+uci -q batch <<-EOF >/dev/null
+	delete ucitrack.@UnblockNetease[-1]
+	add ucitrack UnblockNetease
+	set ucitrack.@UnblockNetease[-1].init=UnblockNetease
+	commit ucitrack
+	delete firewall.UnblockNetease
+	set firewall.UnblockNetease=include
+	set firewall.UnblockNetease.type=script
+	set firewall.UnblockNetease.path=/var/etc/UnblockNetease.include
+	set firewall.UnblockNetease.reload=1
+	commit firewall
+EOF
+
+chmod +x /usr/share/UnblockNetease/*.sh
+chmod +x /etc/init.d/UnblockNetease
+
+rm -f /tmp/luci-indexcache
+exit 0

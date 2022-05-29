@@ -1,0 +1,15 @@
+{
+    "luci-app-unblocknetease-nginx": {
+        "description": "Grant UCI access for luci-app-unblocknetease",
+        "read": {
+            "uci": [
+                "UnblockNetease"
+            ]
+        },
+        "write": {
+            "uci": [
+                "UnblockNetease"
+            ]
+        }
+    }
+}
