@@ -1,5 +1,4 @@
 #!/bin/sh /etc/rc.common
-set -x
 
 START=97
 STOP=10
@@ -126,7 +125,7 @@ set_cert() {
 daemon_proc() {
     [ "$DAEMON_PROC" != "1" ] && return
     sed -i '/UnblockNetease/d' "/etc/crontabs/root"
-    echo "*/1 * * * * /usr/share/${APP_NAME}/check.sh" >>"/etc/crontabs/root"
+    echo "*/5 * * * * /usr/share/${APP_NAME}/check.sh" >>"/etc/crontabs/root"
     /etc/init.d/cron restart >"/dev/null" 2>&1
 }
 

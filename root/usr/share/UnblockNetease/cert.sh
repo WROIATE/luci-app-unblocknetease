@@ -1,5 +1,4 @@
 #!/bin/sh
-set -x
 
 CERT_PATH="/usr/share/UnblockNetease"
 CA_CRT="${CERT_PATH}/ca.crt"

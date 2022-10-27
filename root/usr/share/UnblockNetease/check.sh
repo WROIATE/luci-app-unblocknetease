@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+
 APP_NAME="UnblockNetease"
 LOG_MAX_SIZE="128"
 LOG_PATH="/tmp/log/${APP_NAME}"
