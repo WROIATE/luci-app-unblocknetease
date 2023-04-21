@@ -11,7 +11,7 @@ BIN_FILE="UnblockNeteaseGo"
 MAX_RETRY=5
 
 [ "$DAEMON_PROC" != "1" ] && return
-[ ! -d "$RETRY_LOG" ] touch $RETRY_LOG
+[ ! -d "$RETRY_LOG" ] && touch $RETRY_LOG
 if [ "$(wc -l "${RETRY_LOG}" | awk '{print $1}')" -ge "${MAX_RETRY}" ]; then
     uci set ${APP_NAME}.@${APP_NAME}[0].daemon_proc=0
     uci commit ${APP_NAME}
