@@ -14,5 +14,6 @@ ip6tables -h >"/dev/null" 2>&1
 if [ $? -eq 0 ]; then
     if ! ipset list $IPSET_V6 >"/dev/null"; then ipset create $IPSET_V6 hash:ip family inet6; fi
     khost -t AAAA music.163.com | grep "has IPv6" | awk -va=${IPSET_V6} -F ' ' '{print "ipset add "a" "$NF}' | sh >"/dev/null" 2>&1
+    khost -t AAAA interface.music.163.com | grep "has IPv6" | awk -va=${IPSET_V6} -F ' ' '{print "ipset add "a" "$NF}' | sh >"/dev/null" 2>&1
     ipset add $IPSET_SET $IPSET_V6
 fi
